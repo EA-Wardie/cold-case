@@ -1,6 +1,16 @@
-import { Scene, Engine, FreeCamera, Vector3, HemisphericLight, MeshBuilder, StandardMaterial, Texture, Space, SceneLoader } from "@babylonjs/core";
+import {
+    Scene,
+    Engine,
+    FreeCamera,
+    Vector3,
+    HemisphericLight,
+    MeshBuilder,
+    StandardMaterial,
+    Texture,
+    SceneLoader,
+    Animation
+} from "@babylonjs/core";
 import '@babylonjs/loaders';
-import { _ } from "core-js";
 
 export default {
     data() {
@@ -43,7 +53,7 @@ export default {
         },
         createLight() {
             this.light = new HemisphericLight('light', new Vector3(0, 1, 0), this.scene);
-            this.light.intensity = 0.5;
+            this.light.intensity = 0.75;
         },
         createCamera() {
             this.camera = new FreeCamera('camera', new Vector3(0, 7, -12), this.scene);
@@ -53,45 +63,50 @@ export default {
 
         //Meshes
         createGround() {
-            this.ground = MeshBuilder.CreateGround('ground', { width: 20, height: 20 }, this.scene);
+            this.ground = MeshBuilder.CreateGround('ground', {width: 100, height: 100}, this.scene);
             this.setGroundMaterial();
         },
         createDisk() {
-            this.disk = new MeshBuilder.CreateCylinder("disk", { height: 0.2, diameter: 6, tessellation: 50 }, this.scene);
+            this.disk = new MeshBuilder.CreateCylinder('disk', {
+                height: 0.2,
+                diameter: 8,
+                tessellation: 28
+            }, this.scene);
             this.disk.position = new Vector3(5, 0, -2);
             this.setDiskMaterial();
             this.startDiskRotation();
         },
         createCars() {
+            const carPosition = new Vector3(0, 0.1, -0.15);
             SceneLoader.ImportMesh('', './assets/meshes/cars/', 'SUV.glb', this.scene, (meshes) => {
                 this.cars['suv'] = meshes[0];
                 this.cars['suv'].setEnabled(false);
                 this.cars['suv'].parent = this.disk;
-                this.cars['suv'].position = new Vector3(0, 0.1, -0.25);
+                this.cars['suv'].position = carPosition;
             });
             SceneLoader.ImportMesh('', './assets/meshes/cars/', 'Sedan.glb', this.scene, (meshes) => {
                 this.cars['sedan'] = meshes[0];
                 this.cars['sedan'].setEnabled(false);
                 this.cars['sedan'].parent = this.disk;
-                this.cars['sedan'].position = new Vector3(0, 0.1, -0.25);
+                this.cars['sedan'].position = carPosition;
             });
             SceneLoader.ImportMesh('', './assets/meshes/cars/', 'Old.glb', this.scene, (meshes) => {
                 this.cars['old'] = meshes[0];
                 this.cars['old'].setEnabled(false);
                 this.cars['old'].parent = this.disk;
-                this.cars['old'].position = new Vector3(0, 0.1, -0.25);
+                this.cars['old'].position = carPosition;
             });
             SceneLoader.ImportMesh('', './assets/meshes/cars/', 'Classic.glb', this.scene, (meshes) => {
                 this.cars['classic'] = meshes[0];
                 this.cars['classic'].setEnabled(false);
                 this.cars['classic'].parent = this.disk;
-                this.cars['classic'].position = new Vector3(0, 0.1, -0.25);
+                this.cars['classic'].position = carPosition;
             });
             SceneLoader.ImportMesh('', './assets/meshes/cars/', 'Bus.glb', this.scene, (meshes) => {
                 this.cars['bus'] = meshes[0];
                 this.cars['bus'].setEnabled(false);
                 this.cars['bus'].parent = this.disk;
-                this.cars['bus'].position = new Vector3(0, 0.1, -0.25);
+                this.cars['bus'].position = carPosition;
             });
         },
 
@@ -105,32 +120,43 @@ export default {
         //Helpers
         setGroundMaterial() {
             const groundMaterial = new StandardMaterial('ground_material', this.scene);
-            groundMaterial.bumpTexture = new Texture('./assets/textures/asphalt/asphalt_02_nor_gl_4k.jpg');
-            groundMaterial.diffuseTexture = new Texture('./assets/textures/asphalt/asphalt_02_diff_4k.jpg');
-            groundMaterial.ambientTexture = new Texture('./assets/textures/asphalt/asphalt_02_ao_4k.jpg');
-            groundMaterial.invertNormalMapX = true;
-            groundMaterial.invertNormalMapY = true;
+            groundMaterial.diffuseTexture = new Texture('./assets/textures/stone/Stone_12-256x256.png');
 
             this.ground.material = groundMaterial;
+            this.ground.material.diffuseTexture.uScale = 10;
+            this.ground.material.diffuseTexture.vScale = 10;
         },
         setDiskMaterial() {
             const diskMaterial = new StandardMaterial('disk_material', this.scene);
-            diskMaterial.bumpTexture = new Texture('./assets/textures/metal/rust_coarse_01_nor_gl_4k.jpg');
-            diskMaterial.diffuseTexture = new Texture('./assets/textures/metal/rust_coarse_01_diff_4k.jpg');
-            diskMaterial.ambientTexture = new Texture('./assets/textures/metal/rust_coarse_01_ao_4k.jpg');
+            diskMaterial.diffuseTexture = new Texture('./assets/textures/metal/Metal_07-256x256.png');
 
             this.disk.material = diskMaterial;
+            this.disk.material.diffuseTexture.uScale = 10;
+            this.disk.material.diffuseTexture.vScale = 10;
         },
         startDiskRotation() {
-            const diskAxis = new Vector3(0, 1, 0);
-            const rotationSpeed = 0.004;
-            this.scene.registerBeforeRender(() => {
-                this.disk.rotate(diskAxis, rotationSpeed, Space.WORLD);
-            })
+            const frames = 60,
+                framesPerSecond = 4,
+                diskAnimation = new Animation('diskAnimation', 'rotation.y', framesPerSecond, Animation.ANIMATIONTYPE_FLOAT, Animation.ANIMATIONLOOPMODE_CYCLE),
+                diskKeys = [];
+
+            diskKeys.push({
+                frame: 0,
+                value: 0,
+            });
+            diskKeys.push({
+                frame: frames,
+                value: 2 * Math.PI,
+            });
+            diskAnimation.setKeys(diskKeys);
+
+            this.disk.animations = [];
+            this.disk.animations.push(diskAnimation);
+            this.scene.beginAnimation(this.disk, 0, frames, true);
         },
         renderCar(car) {
             Object.values(this.cars).forEach((car) => car.setEnabled(false));
             car.setEnabled(true);
-        }
+        },
     },
 }

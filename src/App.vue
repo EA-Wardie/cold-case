@@ -16,21 +16,10 @@ export default {
   methods: {
     renderCarFromType(type) {
       this.renderCar(this.cars[type]);
-      this.setLocalStorageValue(type);
-    },
-    setLocalStorageValue(type) {
-      localStorage.setItem("selected_car", type);
     },
   },
   mounted() {
     this.initGame(this.$refs.canvasRenderer);
-
-    setTimeout(() => {
-      if (!!localStorage.getItem("selected_car")) {
-        console.log(localStorage.getItem("selected_car"));
-        this.renderCar(this.cars[localStorage.getItem("selected_car")]);
-      }
-    }, 1000);
   },
 };
 </script>
@@ -56,5 +45,7 @@ export default {
   top: 0;
   left: 0;
   background-color: rgba(0, 0, 0, 0.7);
+  margin: 10px;
+  border-radius: 10px;
 }
 </style>
